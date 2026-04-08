@@ -376,14 +376,15 @@ input[type=date]{color-scheme:light dark;}
 
 /* Parceiros */
 .cp-partners-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);height:404px;display:flex;flex-direction:column;}
-.cp-parc-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);}
-.cp-parc-table{width:100%;border-collapse:collapse;margin-top:8px;}
-.cp-parc-table th{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:2px solid var(--border);text-align:left;}
-.cp-parc-table th:last-child{text-align:right;}
-.cp-parc-table td{font-size:12px;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);}
-.cp-parc-table td:last-child{text-align:right;font-weight:600;color:var(--c-bl);}
-.cp-parc-table tr:last-child td{border-bottom:none;}
-.cp-parc-table tr:hover td{background:var(--bg3);}
+.cp-parc-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);height:228px;overflow:hidden;display:flex;flex-direction:column;}
+.cp-parc-scroll{flex:1;overflow-y:auto;}
+.cp-parc-scroll::-webkit-scrollbar{width:3px;}
+.cp-parc-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.cp-parc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;}
+.cp-parc-item{background:var(--bg3);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:3px;}
+.cp-parc-item-mes{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.cp-parc-item-val{font-size:13px;font-weight:700;color:var(--c-bl);}
+.cp-parc-item-zero .cp-parc-item-val{color:var(--text3);font-weight:400;font-size:11px;}
 .cp-parc-empty{font-size:11px;color:var(--text3);text-align:center;padding:20px;}
 .cp-partners-list{flex:1;overflow-y:auto;}
 .cp-partners-list::-webkit-scrollbar{width:4px;}
@@ -440,7 +441,7 @@ input[type=date]{color-scheme:light dark;}
   <div class="topbar-right">
     <div class="chips-wrap" id="cx-chips"></div>
     <div class="chips-wrap" id="dd-chips"></div>
-    <span class="last-update">Atualização: 04/04/2026 · 08/04/2026 as 01:00</span>
+    <span class="last-update">Atualização: 04/04/2026 · 08/04/2026 as 01:12</span>
     <span class="chip ok" id="chip-n">— registros</span>
     <button class="theme-toggle" onclick="toggleTheme()"><div class="knob"></div></button>
     <button class="btn-sm" id="btn-filtros" onclick="toggleFilters()">&#9660; Filtros</button>
@@ -685,7 +686,7 @@ function gROpts(P,id,q){
   const isCleared=selObj[id].has('__cleared__');
   const isAll=selObj[id].size===0||isCleared;
   if(!shown.length){el.innerHTML='<div class="df-empty">Nenhum resultado</div>';gRCount(P,id);return;}
-  el.innerHTML=shown.map(o=>`<label class="df-opt" onclick="event.stopPropagation()"><input type="checkbox" value="${o.replace(/"/g,'&quot;')}" ${(!isCleared&&(isAll||selObj[id].has(o)))?'checked':''}><span title="${o}">${o}</span></label>`).join('');
+  el.innerHTML=shown.map(o=>`<label class="df-opt"><input type="checkbox" value="${o.replace(/"/g,'&quot;')}" ${(!isCleared&&(isAll||selObj[id].has(o)))?'checked':''}><span title="${o}">${o}</span></label>`).join('');
   el.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',function(e){
     e.stopPropagation();
     selObj[id].delete('__cleared__');
@@ -1298,13 +1299,14 @@ function cpRender(){
       </div>
       ${RAW.parcelamento?`
       <div class="cp-parc-card">
-        <div class="cp-card-title">Parcelamento de vales — VFIS mensal</div>
-        <table class="cp-parc-table">
-          <thead><tr><th>Mês</th><th>Valor a descontar</th></tr></thead>
-          <tbody>
-            ${(()=>{const d=RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()]||[];const rows=d.filter(p=>p.vfis>0).map(p=>`<tr><td>${p.mes}</td><td>R$ ${p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`);return rows.length?rows.join(''):`<tr><td colspan="2" style="text-align:center;padding:12px;color:var(--text3);font-size:11px">Sem parcelamento registrado</td></tr>`})()}
-          </tbody>
-        </table>
+        <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales — VFIS Mensal</div>
+        <div class="cp-parc-scroll">
+          ${(()=>{
+            const d=RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()]||[];
+            if(!d.length) return '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text3)">Sem parcelamento registrado</div>';
+            return '<div class="cp-parc-grid">'+d.map(p=>`<div class="cp-parc-item${p.vfis===0?' cp-parc-item-zero':''}"><div class="cp-parc-item-mes">${p.mes}</div><div class="cp-parc-item-val">${p.vfis===0?'—':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>`).join('')+'</div>';
+          })()}
+        </div>
       </div>`:''}
     </div>
 
@@ -1392,10 +1394,9 @@ function init(){
   cpColSearch(''); // população inicial COMPLETA da lista
   buildChart();applyFilters();
 
-  document.addEventListener('click',e=>{
+  document.addEventListener('mousedown',e=>{
     // Não fechar se clicou dentro de qualquer panel ou grupo de filtro
     const inPanel = e.target.closest('.df-panel') ||
-                    e.target.closest('.cp-df-panel') ||
                     e.target.closest('.cp-col-panel') ||
                     e.target.closest('.fg') ||
                     e.target.closest('.cp-fg');
