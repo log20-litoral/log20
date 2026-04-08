@@ -7,6 +7,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
+/* Scrollbar global */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2,rgba(128,128,128,.3));border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text3,rgba(128,128,128,.5));}
+* {scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}
 :root{
   --bg:#f0f2f5;--bg2:#fff;--bg3:#eef0f4;--bg4:#e6e9ef;
   --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.13);
@@ -58,8 +64,8 @@ html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-sy
 .page{display:none;}.page.active{display:block;min-height:calc(100vh - 48px);background:var(--bg);}
 
 /* ── FILTERBAR (painel) ── */
-.filterbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;overflow:visible;max-height:0;opacity:0;transition:max-height .3s,opacity .25s,padding .25s;pointer-events:none;}
-.filterbar.open{max-height:140px;opacity:1;padding:10px 24px 12px;pointer-events:all;}
+.filterbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;overflow:visible;max-height:0;visibility:hidden;transition:max-height .3s,visibility .3s,padding .25s;pointer-events:none;}
+.filterbar.open{max-height:140px;visibility:visible;padding:10px 24px 12px;pointer-events:all;}
 .fg{display:flex;flex-direction:column;gap:3px;position:relative;}
 .fg label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:600;}
 .df-btn{font-size:11px;padding:5px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text);cursor:pointer;min-width:148px;display:flex;align-items:center;justify-content:space-between;gap:6px;outline:none;white-space:nowrap;transition:all .15s;}
@@ -67,7 +73,7 @@ html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-sy
 .df-btn:hover,.df-btn.open{border-color:var(--c-bl);box-shadow:0 0 0 2px var(--c-bl-t);}
 .df-arr{font-size:9px;flex-shrink:0;color:var(--text3);transition:transform .15s;}
 .df-btn.open .df-arr{transform:rotate(180deg);}
-.df-panel{position:absolute;top:calc(100% + 5px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;min-width:240px;display:none;overflow:hidden;box-shadow:var(--sh2);}
+.df-panel{position:fixed;top:0;left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;min-width:240px;display:none;overflow:hidden;box-shadow:var(--sh2);}
 .df-panel.open{display:block;animation:pIn .15s ease;}
 @keyframes pIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .df-search{padding:8px;border-bottom:1px solid var(--border);}
@@ -441,7 +447,7 @@ input[type=date]{color-scheme:light dark;}
   <div class="topbar-right">
     <div class="chips-wrap" id="cx-chips"></div>
     <div class="chips-wrap" id="dd-chips"></div>
-    <span class="last-update">Atualização: 04/04/2026 · 08/04/2026 as 09:59</span>
+    <span class="last-update">Atualização: 04/04/2026 · 08/04/2026 as 11:47</span>
     <span class="chip ok" id="chip-n">— registros</span>
     <button class="theme-toggle" onclick="toggleTheme()"><div class="knob"></div></button>
     <button class="btn-sm" id="btn-filtros" onclick="toggleFilters()">&#9660; Filtros</button>
@@ -649,7 +655,10 @@ function mkGenDD({id,wrap,initOpts,placeholder,onChangeFn,selObj,prefix}){
     `<div class="df-list" id="${P}sl-${id}"></div>`+
     `<div class="df-count" id="${P}sc-${id}"></div>`;
 
-  wrap.appendChild(btn);wrap.appendChild(pnl);
+  wrap.appendChild(btn);
+  // Panel vai pro body para evitar stacking context do filterbar
+  document.body.appendChild(pnl);
+  pnl.style.position='fixed'; // fixed em vez de absolute — relativo ao viewport
   btn.addEventListener('click',e=>{e.stopPropagation();gOpen(P,id);});
   GEN_DD[P+'|'+id]={state,selObj,onChangeFn,P,id};
   gROpts(P,id,'');gUpdBtn(P,id);
@@ -663,9 +672,25 @@ function gOpen(P,id){
   gCloseAll();
   if(!isOpen){
     const dd=gDD(P,id);if(!dd)return;
-    document.getElementById(P+'pnl-'+id).classList.add('open');
-    document.getElementById(P+'btn-'+id).classList.add('open');
-    const si=document.getElementById(P+'si-'+id);si.value='';gROpts(P,id,'');si.focus();
+    const pnl=document.getElementById(P+'pnl-'+id);
+    const btn=document.getElementById(P+'btn-'+id);
+    const rect=btn.getBoundingClientRect();
+    pnl.style.top=(rect.bottom+5)+'px';
+    pnl.style.left=rect.left+'px';
+    pnl.style.minWidth=Math.max(rect.width,240)+'px';
+    pnl.classList.add('open');
+    btn.classList.add('open');
+    const si=document.getElementById(P+'si-'+id);si.value='';gROpts(P,id,'');
+    // Fechar ao clicar fora usando click no document (não mousedown)
+    // O stopPropagation no btn impede que esse listener seja acionado pelo btn
+    setTimeout(()=>{
+      document.addEventListener('click', function handler(e){
+        if(!pnl.contains(e.target) && e.target!==btn){
+          gCloseAll();
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 0);
   }
 }
 function gCloseAll(){
@@ -675,6 +700,7 @@ function gCloseAll(){
     document.getElementById(P+'pnl-'+id)?.classList.remove('open');
     document.getElementById(P+'btn-'+id)?.classList.remove('open');
   });
+
 }
 
 // Renderiza opções — sel VAZIO = todos checked visualmente
@@ -1235,7 +1261,6 @@ function cpRender(){
         <div class="cp-profile-card">
           <div class="cp-avatar">${iniciais}</div>
           <div class="cp-nome">${nome}</div>
-          <span class="cp-col-fn ${fnCls}" style="font-size:11px;padding:3px 10px;border-radius:20px;">${fnLabel}</span>
           <div class="cp-badges">
             <span class="cp-badge ${sCls}">${sLbl}</span>
             ${(cad.equipe||cad.sala)?`<span class="cp-badge cp-badge-sala">${cad.equipe||cad.sala}</span>`:''}
@@ -1247,7 +1272,6 @@ function cpRender(){
             ${cad.status==='DESLIGADO'&&demStr?`<div class="cp-meta-item"><div class="cp-meta-icon">🚪</div><div><div class="cp-meta-label">Demissão</div><div class="cp-meta-val">${demStr}</div><div class="cp-meta-sub">Tempo de casa</div></div></div>`:''}
             ${cad.nasc?`<div class="cp-meta-item"><div class="cp-meta-icon">🎂</div><div><div class="cp-meta-label">Nascimento</div><div class="cp-meta-val">${cad.nasc.split('-').reverse().join('/')}</div></div></div>`:''}
             ${cad.matr?`<div class="cp-meta-item"><div class="cp-meta-icon">🪪</div><div><div class="cp-meta-label">Matrícula</div><div class="cp-meta-val">${cad.matr}</div></div></div>`:''}
-            ${cad.filial?`<div class="cp-meta-item"><div class="cp-meta-icon">🏢</div><div><div class="cp-meta-label">Filial</div><div class="cp-meta-val">${cad.filial}</div></div></div>`:''}
           </div>
         </div>
       <div class="cp-mini-stats">
@@ -1297,17 +1321,6 @@ function cpRender(){
         <div class="cp-card-title">Quantidade de vales no período <span class="card-hint" style="font-size:9px;">Ctrl+clique p/ múltiplos</span></div>
         <div class="cp-chart-area"><canvas id="cp-linha-qtde"></canvas></div>
       </div>
-      ${RAW.parcelamento?`
-      <div class="cp-parc-card">
-        <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales — VFIS Mensal</div>
-        <div class="cp-parc-scroll">
-          ${(()=>{
-            const d=RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()]||[];
-            if(!d.length) return '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text3)">Sem parcelamento registrado</div>';
-            return '<div class="cp-parc-grid">'+d.map(p=>`<div class="cp-parc-item${p.vfis===0?' cp-parc-item-zero':''}"><div class="cp-parc-item-mes">${p.mes}</div><div class="cp-parc-item-val">${p.vfis===0?'—':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>`).join('')+'</div>';
-          })()}
-        </div>
-      </div>`:''}
     </div>
 
     <!-- COL 3 -->
@@ -1330,6 +1343,17 @@ function cpRender(){
         </div>
       </div>
     </div>
+  <div style="display:grid;grid-template-columns:210px minmax(0,1.15fr) minmax(0,1fr);gap:14px;margin-top:14px;">
+    <div style="grid-column:1/3;">
+      <div class="cp-parc-card">
+        <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales &#8212; VFIS Mensal</div>
+        <div class="cp-parc-scroll">
+          ${(()=>{const d=RAW.parcelamento&&(RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()])||[];if(!d.length)return '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text3)">Sem parcelamento registrado</div>';return '<div class="cp-parc-grid">'+d.map(p=>'<div class="cp-parc-item'+(p.vfis===0?' cp-parc-item-zero':'')+'"><div class="cp-parc-item-mes">'+p.mes+'</div><div class="cp-parc-item-val">'+(p.vfis===0?'&#8212;':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div></div>').join('')+'</div>';})()}
+        </div>
+      </div>
+    </div>
+    <div></div>
+  </div>
   </div>`;
 
   // ── CHARTS ──────────────────────────────────────────────────────────────
@@ -1394,14 +1418,7 @@ function init(){
   cpColSearch(''); // população inicial COMPLETA da lista
   buildChart();applyFilters();
 
-  document.addEventListener('mousedown',e=>{
-    // Não fechar se clicou dentro de qualquer panel ou grupo de filtro
-    const inPanel = e.target.closest('.df-panel') ||
-                    e.target.closest('.cp-col-panel') ||
-                    e.target.closest('.fg') ||
-                    e.target.closest('.cp-fg');
-    if(!inPanel) gCloseAll();
-  });
+  // Fechamento via backdrop — ver gOpen
 }
 init();
 </script></body></html>
