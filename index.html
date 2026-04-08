@@ -7,12 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-/* Scrollbar global */
-::-webkit-scrollbar{width:6px;height:6px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:var(--border2,rgba(128,128,128,.3));border-radius:4px;}
-::-webkit-scrollbar-thumb:hover{background:var(--text3,rgba(128,128,128,.5));}
-* {scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}
 :root{
   --bg:#f0f2f5;--bg2:#fff;--bg3:#eef0f4;--bg4:#e6e9ef;
   --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.13);
@@ -447,7 +441,7 @@ input[type=date]{color-scheme:light dark;}
   <div class="topbar-right">
     <div class="chips-wrap" id="cx-chips"></div>
     <div class="chips-wrap" id="dd-chips"></div>
-    <span class="last-update">Atualização: 04/04/2026 · 08/04/2026 as 09:33</span>
+    <span class="last-update">Atualização: 04/04/2026 · 08/04/2026 as 09:59</span>
     <span class="chip ok" id="chip-n">— registros</span>
     <button class="theme-toggle" onclick="toggleTheme()"><div class="knob"></div></button>
     <button class="btn-sm" id="btn-filtros" onclick="toggleFilters()">&#9660; Filtros</button>
@@ -672,11 +666,6 @@ function gOpen(P,id){
     document.getElementById(P+'pnl-'+id).classList.add('open');
     document.getElementById(P+'btn-'+id).classList.add('open');
     const si=document.getElementById(P+'si-'+id);si.value='';gROpts(P,id,'');si.focus();
-    // Mostrar backdrop para fechar ao clicar fora
-    let bd=document.getElementById('dd-backdrop');
-    if(!bd){bd=document.createElement('div');bd.id='dd-backdrop';bd.style.cssText='position:fixed;inset:0;z-index:9998;';document.body.appendChild(bd);}
-    bd.style.display='block';
-    bd.onclick=()=>{gCloseAll();bd.style.display='none';};
   }
 }
 function gCloseAll(){
@@ -686,8 +675,6 @@ function gCloseAll(){
     document.getElementById(P+'pnl-'+id)?.classList.remove('open');
     document.getElementById(P+'btn-'+id)?.classList.remove('open');
   });
-  const bd=document.getElementById('dd-backdrop');
-  if(bd) bd.style.display='none';
 }
 
 // Renderiza opções — sel VAZIO = todos checked visualmente
@@ -1248,6 +1235,7 @@ function cpRender(){
         <div class="cp-profile-card">
           <div class="cp-avatar">${iniciais}</div>
           <div class="cp-nome">${nome}</div>
+          <span class="cp-col-fn ${fnCls}" style="font-size:11px;padding:3px 10px;border-radius:20px;">${fnLabel}</span>
           <div class="cp-badges">
             <span class="cp-badge ${sCls}">${sLbl}</span>
             ${(cad.equipe||cad.sala)?`<span class="cp-badge cp-badge-sala">${cad.equipe||cad.sala}</span>`:''}
@@ -1259,6 +1247,7 @@ function cpRender(){
             ${cad.status==='DESLIGADO'&&demStr?`<div class="cp-meta-item"><div class="cp-meta-icon">🚪</div><div><div class="cp-meta-label">Demissão</div><div class="cp-meta-val">${demStr}</div><div class="cp-meta-sub">Tempo de casa</div></div></div>`:''}
             ${cad.nasc?`<div class="cp-meta-item"><div class="cp-meta-icon">🎂</div><div><div class="cp-meta-label">Nascimento</div><div class="cp-meta-val">${cad.nasc.split('-').reverse().join('/')}</div></div></div>`:''}
             ${cad.matr?`<div class="cp-meta-item"><div class="cp-meta-icon">🪪</div><div><div class="cp-meta-label">Matrícula</div><div class="cp-meta-val">${cad.matr}</div></div></div>`:''}
+            ${cad.filial?`<div class="cp-meta-item"><div class="cp-meta-icon">🏢</div><div><div class="cp-meta-label">Filial</div><div class="cp-meta-val">${cad.filial}</div></div></div>`:''}
           </div>
         </div>
       <div class="cp-mini-stats">
@@ -1308,6 +1297,17 @@ function cpRender(){
         <div class="cp-card-title">Quantidade de vales no período <span class="card-hint" style="font-size:9px;">Ctrl+clique p/ múltiplos</span></div>
         <div class="cp-chart-area"><canvas id="cp-linha-qtde"></canvas></div>
       </div>
+      ${RAW.parcelamento?`
+      <div class="cp-parc-card">
+        <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales — VFIS Mensal</div>
+        <div class="cp-parc-scroll">
+          ${(()=>{
+            const d=RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()]||[];
+            if(!d.length) return '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text3)">Sem parcelamento registrado</div>';
+            return '<div class="cp-parc-grid">'+d.map(p=>`<div class="cp-parc-item${p.vfis===0?' cp-parc-item-zero':''}"><div class="cp-parc-item-mes">${p.mes}</div><div class="cp-parc-item-val">${p.vfis===0?'—':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>`).join('')+'</div>';
+          })()}
+        </div>
+      </div>`:''}
     </div>
 
     <!-- COL 3 -->
@@ -1330,22 +1330,6 @@ function cpRender(){
         </div>
       </div>
     </div>
-  ${RAW.parcelamento?`
-  <div style="display:grid;grid-template-columns:210px minmax(0,1.15fr) minmax(0,1fr);gap:14px;margin-top:0;">
-    <div style="grid-column:1/3;">
-      <div class="cp-parc-card" style="height:166px;">
-        <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales — VFIS Mensal</div>
-        <div class="cp-parc-scroll">
-          ${(()=>{
-            const d=RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()]||[];
-            if(!d.length) return '<div style=\"text-align:center;padding:20px;font-size:11px;color:var(--text3)\">Sem parcelamento registrado</div>';
-            return '<div class=\"cp-parc-grid\">' + d.map(p=>'<div class=\"cp-parc-item'+(p.vfis===0?' cp-parc-item-zero':'')+'\">'+'<div class=\"cp-parc-item-mes\">' +p.mes+'</div>'+'<div class=\"cp-parc-item-val\">'+(p.vfis===0?'—':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div></div>').join('') + '</div>';
-          })()}
-        </div>
-      </div>
-    </div>
-    <div></div>
-  </div>`:''}
   </div>`;
 
   // ── CHARTS ──────────────────────────────────────────────────────────────
@@ -1410,7 +1394,14 @@ function init(){
   cpColSearch(''); // população inicial COMPLETA da lista
   buildChart();applyFilters();
 
-  // Fechamento via backdrop — ver gOpen
+  document.addEventListener('mousedown',e=>{
+    // Não fechar se clicou dentro de qualquer panel ou grupo de filtro
+    const inPanel = e.target.closest('.df-panel') ||
+                    e.target.closest('.cp-col-panel') ||
+                    e.target.closest('.fg') ||
+                    e.target.closest('.cp-fg');
+    if(!inPanel) gCloseAll();
+  });
 }
 init();
 </script></body></html>
