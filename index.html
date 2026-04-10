@@ -463,7 +463,7 @@ input[type=date]{color-scheme:light dark;}
   <div class="topbar-right">
     <div class="chips-wrap" id="cx-chips"></div>
     <div class="chips-wrap" id="dd-chips"></div>
-    <span class="last-update">Atualização: 08/04/2026 · 10/04/2026 as 09:24</span>
+    <span class="last-update">Atualização: 08/04/2026 · 10/04/2026 as 09:48</span>
     <span class="chip ok" id="chip-n">— registros</span>
     <button class="theme-toggle" onclick="toggleTheme()"><div class="knob"></div></button>
     <button class="btn-sm" id="btn-filtros" onclick="toggleFilters()">&#9660; Filtros</button>
@@ -1384,6 +1384,7 @@ function cpRender(){
   </div>`;
 
   // ── CHARTS ──────────────────────────────────────────────────────────────
+  requestAnimationFrame(()=>{
   cpPopMapas(nome);
   cpCharts.donut=new Chart(document.getElementById('cp-donut'),{type:'doughnut',
     data:{labels:['Abonado','Faturado','Faturar','Sem Ação'],datasets:[{data:[abo,fatS,faturar,semAcao],
@@ -1418,6 +1419,7 @@ function cpRender(){
     data:{labels:mLabels,datasets:[{data:meses.map(m=>byMes[m].qtde),borderColor:CL[0],backgroundColor:CL[0]+'22',fill:true,tension:.4,pointRadius:meses.map(m=>ptR(m)),pointBackgroundColor:meses.map(m=>ptC(m,CL[0])),borderWidth:2}]},
     options:lineOpts(v=>v,true)});
 
+  }); // fim requestAnimationFrame
 }
 
 // ── UTILS + INIT ──────────────────────────────────────────────────────────────
