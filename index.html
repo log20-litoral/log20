@@ -327,6 +327,21 @@ input[type=date]{color-scheme:light dark;}
 .cp-profile-card::-webkit-scrollbar{width:4px;}
 .cp-profile-card::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
 .cp-mini-stats{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;flex-shrink:0;height:166px;}
+.cp-mapas-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden;height:228px;}
+
+.cp-mapas-scroll{overflow-y:auto;flex:1;}
+.cp-mapas-scroll::-webkit-scrollbar{width:4px;}
+.cp-mapas-scroll::-webkit-scrollbar-track{background:transparent;}
+.cp-mapas-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+.cp-mapas-scroll::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+.cp-mapas-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed;}
+.cp-mapas-table thead th{background:var(--bg3);padding:5px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:1;}
+.cp-mapas-table .cf{display:block;width:100%;margin-top:3px;font-size:9px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);outline:none;font-weight:400;text-transform:none;letter-spacing:0;}
+.cp-mapas-table .cf:focus{border-color:var(--c-bl);}
+.cp-mapas-table tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+.cp-mapas-table tbody tr:hover{background:var(--bg3);}
+.cp-mapas-table tbody td{padding:5px 10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;}
+.cp-mapas-table tbody td:first-child{color:var(--text);font-weight:600;}
 .cp-mstat{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;box-shadow:var(--sh);display:flex;flex-direction:column;justify-content:center;}
 .cp-mstat-val{font-size:16px;font-weight:700;line-height:1.1;margin-bottom:2px;}
 .cp-mstat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
@@ -448,7 +463,7 @@ input[type=date]{color-scheme:light dark;}
   <div class="topbar-right">
     <div class="chips-wrap" id="cx-chips"></div>
     <div class="chips-wrap" id="dd-chips"></div>
-    <span class="last-update">Atualização: 08/04/2026 · 08/04/2026 as 18:27</span>
+    <span class="last-update">Atualização: 08/04/2026 · 10/04/2026 as 09:24</span>
     <span class="chip ok" id="chip-n">— registros</span>
     <button class="theme-toggle" onclick="toggleTheme()"><div class="knob"></div></button>
     <button class="btn-sm" id="btn-filtros" onclick="toggleFilters()">&#9660; Filtros</button>
@@ -1281,6 +1296,19 @@ function cpRender(){
         <div class="cp-mstat gr"><div class="cp-mstat-val">${pctAbo}%</div><div class="cp-mstat-lbl">Abonado</div></div>
           <div class="cp-mstat re"><div class="cp-mstat-val">${pctCob}%</div><div class="cp-mstat-lbl">Cobrado</div></div>
       </div>
+      <div class="cp-mapas-card">
+        <div class="cp-mapas-scroll">
+          <table class="cp-mapas-table" id="cp-mapas-tbl">
+            <thead>
+              <tr>
+                <th style="width:55%">Mapa<input class="cf" id="cf-mapa" placeholder="filtrar" oninput="cpFiltrarMapas()"></th>
+                <th style="width:45%">Data<input class="cf" id="cf-mapa-dt" placeholder="filtrar" oninput="cpFiltrarMapas()"></th>
+              </tr>
+            </thead>
+            <tbody id="cp-mapas-body"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- COL 2 -->
@@ -1322,6 +1350,12 @@ function cpRender(){
         <div class="cp-card-title">Quantidade de vales no período <span class="card-hint" style="font-size:9px;">Ctrl+clique p/ múltiplos</span></div>
         <div class="cp-chart-area"><canvas id="cp-linha-qtde"></canvas></div>
       </div>
+      <div class="cp-parc-card" style="height:230px;">
+        <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales — VFIS Mensal</div>
+        <div class="cp-parc-scroll">
+          ${(()=>{const d=RAW.parcelamento&&(RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()])||[];if(!d.length)return '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text3)">Sem parcelamento registrado</div>';return '<div class="cp-parc-grid">'+d.map(p=>'<div class="cp-parc-item'+(p.vfis===0?' cp-parc-item-zero':'')+'"><div class="cp-parc-item-mes">'+p.mes+'</div><div class="cp-parc-item-val">'+(p.vfis===0?'—':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div></div>').join('')+'</div>';})()}
+        </div>
+      </div>
     </div>
 
     <!-- COL 3 -->
@@ -1332,6 +1366,7 @@ function cpRender(){
           ${insights.map(i=>`<div class="cp-insight ${i.tipo}"><div class="cp-insight-icon">${i.icon}</div><div><div class="cp-insight-title">${i.title}</div><div class="cp-insight-val">${i.val}</div><div class="cp-insight-sub">${i.sub}</div></div></div>`).join('')||'<div style="font-size:11px;color:var(--text3);">Sem dados suficientes.</div>'}
         </div>
       </div>
+
       <div class="cp-partners-card">
         <div class="cp-card-title">Colaboradores com quem teve mais saídas</div>
         <div class="cp-partners-list">
@@ -1345,16 +1380,11 @@ function cpRender(){
       </div>
     </div>
 
-  <div style="width:calc(96px + 53.5%);height:230px;" class="cp-parc-card">
-    <div class="cp-card-title" style="flex-shrink:0;">Parcelamento de Vales — VFIS Mensal</div>
-    <div class="cp-parc-scroll">
-      ${(()=>{const d=RAW.parcelamento&&(RAW.parcelamento[nome]||RAW.parcelamento[nome.slice(0,30).trim()])||[];if(!d.length)return '<div style="text-align:center;padding:20px;font-size:11px;color:var(--text3)">Sem parcelamento registrado</div>';return '<div class="cp-parc-grid">'+d.map(p=>'<div class="cp-parc-item'+(p.vfis===0?' cp-parc-item-zero':'')+'"><div class="cp-parc-item-mes">'+p.mes+'</div><div class="cp-parc-item-val">'+(p.vfis===0?'—':'R$ '+p.vfis.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))+'</div></div>').join('')+'</div>';})()}
-    </div>
-  </div>
 
   </div>`;
 
   // ── CHARTS ──────────────────────────────────────────────────────────────
+  cpPopMapas(nome);
   cpCharts.donut=new Chart(document.getElementById('cp-donut'),{type:'doughnut',
     data:{labels:['Abonado','Faturado','Faturar','Sem Ação'],datasets:[{data:[abo,fatS,faturar,semAcao],
       backgroundColor:COLORS.map((c,i)=>CP_CX.trats.size>0&&!CP_CX.trats.has(CATS[i])?c+'1a':c+'55'),
@@ -1419,4 +1449,53 @@ function init(){
   // Fechamento via backdrop — ver gOpen
 }
 init();
+
+function cpPopMapas(nome){
+  // Usar os mesmos dados já filtrados pelo cpRender (CP_CX)
+  const ini  = document.getElementById('cp-ini')?.value||'';
+  const fim  = document.getElementById('cp-fim')?.value||'';
+  const trat = CP_CX.trats.size>0?[...CP_CX.trats]:null;
+  const mapa = CP_CX.mapas.size>0?[...CP_CX.mapas]:null;
+  const prod = CP_CX.prods.size>0?[...CP_CX.prods]:null;
+
+  const regs = DATA.filter(r=>{
+    if(!(r.motorista===nome||r.aj1===nome||r.aj2===nome)) return false;
+    if(ini && r.dt < ini) return false;
+    if(fim && r.dt > fim) return false;
+    if(trat && !trat.includes(r.trat_ambev)) return false;
+    if(mapa && !mapa.includes(String(r.mapa))) return false;
+    if(prod && !prod.includes(r.produto)) return false;
+    return true;
+  });
+
+  const vistos = new Set();
+  const mapas = [];
+  regs.forEach(r=>{
+    const key = r.mapa+'|'+r.dt;
+    if(!vistos.has(key)){
+      vistos.add(key);
+      mapas.push({mapa:r.mapa, dt:r.dt});
+    }
+  });
+  mapas.sort((a,b)=>b.dt.localeCompare(a.dt));
+  window._cpMapas = mapas;
+  cpFiltrarMapas();
+}
+
+function cpFiltrarMapas(){
+  const mapas = window._cpMapas || [];
+  const fMapa = (document.getElementById('cf-mapa')?.value||'').toLowerCase();
+  const fDt   = (document.getElementById('cf-mapa-dt')?.value||'').toLowerCase();
+  const tbody = document.getElementById('cp-mapas-body');
+  if(!tbody) return;
+  const MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const fmt = dt=>{const[y,m,d]=dt.split('-');return d+'/'+m+'/'+y;};
+  const rows = mapas.filter(r=>
+    String(r.mapa).toLowerCase().includes(fMapa) &&
+    fmt(r.dt).includes(fDt)
+  );
+  tbody.innerHTML = rows.length
+    ? rows.map(r=>`<tr><td>${r.mapa}</td><td>${fmt(r.dt)}</td></tr>`).join('')
+    : `<tr><td colspan="2" style="text-align:center;padding:10px;color:var(--text3)">Nenhum resultado</td></tr>`;
+}
 </script></body></html>
